@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+# Version 1.0
+#Python 3.6.5
+
+import numpy as np
+import subprocess
+import sys
+
+#asc_in = sys.argv[1]
+#desc_in = sys.argv[2]
+
+
+#clean up outputs prior to running calculator
+cmd = 'rm output.xyz output_east.xyz output_up.xyz'
+subprocess.call(cmd, shell=True)
+
+#A_data = np.loadtxt(asc_in)
+#D_data = np.loadtxt(desc_in)
+#import LOS data, adjust nan to 0
+A_data = np.loadtxt("ascend.xyz")
+D_data = np.loadtxt("descend.xyz")
+
+
+A_data = np.nan_to_num(A_data, copy=False)
+D_data = np.nan_to_num(D_data, copy=False)
+
+#Define just the position data (long lat) from the imported data
+pos_A = np.array(A_data[:,0:2])
+pos_D = np.array(D_data[:,0:2])
+
+#Define the los change for the calculator
+los_A = np.array(A_data[:,2:3])
+los_D = np.array(D_data[:,2:3])
+
+#Define the Alpha values
+Aalpha = -167.612804501583
+Dalpha = -167.667127431880
+
+
+#Synthesize omega, this shall be removed and import data will be used instead soon! 
+aO = A_data[:,1:2] % + 37
+dO = D_data[:,1:2] % + 33
+#aO = Aincidence_data[:,:]
+#dO = Dincidence_data[:,:]
+
+#create the 4 elements for the matrix used for the inversion 
+
+o11=-1*np.sin(aO)*np.cos(Aalpha)
+o12= np.cos(aO)
+o21=-1*np.sin(dO)*np.cos(Dalpha)
+o22= np.cos(dO)
+
+
+#run the inversion row by row
+n=0
+for n in range(0,259200):
+     A = np.array([[o11[n,:], o12[n,:]], [o21[n,:], o22[n,:]]])
+     d = np.array([los_A[n,:], los_D[n,:]])
+     X=np.linalg.pinv(A).dot(d).T
+     with open('output.xyz', 'a') as outfile:
+          for slice_2d in X:
+               np.savetxt(outfile, slice_2d)
+     n = n+1
+
+     if n==259201:
+          break
+
+#Load in the output file 
+output = np.loadtxt("output.xyz")
+
+#This produces the min and max, which is useful for the scale bars in GMT script
+print('east')
+print('-T', np.amin(output[:,0:1]),"/",np.amax(output[:,0:1]))
+print('vert')
+print('-T', np.amin(output[:,1:2]),"/",np.amax(output[:,1:2]))
+
+#Change zeros back to nan so that the output shows poorly correlated pixels
+output[output == 0] = 'nan'
+
+x = np.concatenate((pos_A, (output[:,0:1]*-1)), axis=1)
+y = np.concatenate((pos_A, output[:,1:2]), axis=1)
+np.savetxt('Eoutput_EAST.xyz', x, fmt='%.7f')
+np.savetxt('output_up.xyz', y, fmt='%.7f')
+
+#Import the model east and up parameters for removal later
+model_east = np.loadtxt("THE_ONE.xyz")
+model_up = np.loadtxt("MODEL_UP.xyz")
+
+modEAST=model_east[:,2:3]
+modUP=model_up[:,2:3]*1.5
+modx = np.concatenate((pos_A, np.subtract((output[:,0:1]*-1), modEAST)), axis=1)
+mody = np.concatenate((pos_A, np.subtract(output[:,1:2], modUP)), axis=1)
+np.savetxt('Emodel_EAST.xyz', modx, fmt='%.7f')
+np.savetxt('model_output_up.xyz', mody, fmt='%.7f')
+
+#EOF
