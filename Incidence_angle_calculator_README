@@ -1,0 +1,5 @@
+#in order to produce the incidence angles, use this calculator on the command line:
+
+incidence_calculator.py asc_incidence_data.xyz OUTPUT.xyz
+
+#EOF
