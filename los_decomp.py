@@ -10,9 +10,10 @@ asc_los = sys.argv[1]
 asc_inc = sys.argv[2]
 desc_los = sys.argv[3]
 desc_inc = sys.argv[4]
+name = sys.argv[5]
 
 #clean up outputs prior to running calculator
-cmd = 'rm output.xyz output_east.xyz output_up.xyz'
+cmd = 'rm outputs/output_up_'+name+'.xyz outputs/output_east'+name+'.xyz'
 subprocess.call(cmd, shell=True)
 
 A_data = np.loadtxt(asc_los)
@@ -26,7 +27,7 @@ pos_D = np.array(D_data[:,0:2])
 los_A = np.array(A_data[:,2:3])
 los_D = np.array(D_data[:,2:3])
 
-#flight direction in radians
+#flight direction in radians- alpha values. This is different for every satellite path
 Aalpha = -0.363115751
 Dalpha = -2.7907815
 
@@ -36,40 +37,31 @@ D_inc = np.loadtxt(desc_inc)
 aO = A_inc[:,2:3]
 dO = D_inc[:,2:3]
 
-#create the 4 elements for the matrix used for the inversion 
+#create the G matrix for the inversion 
 
-o11=-1*np.sin(aO)*np.cos(Aalpha)
-o12= np.cos(aO)
-o21=-1*np.sin(dO)*np.cos(Dalpha)
-o22= np.cos(dO)
+G = np.zeros((2*len(A_data), 2*len(A_data)))
 
+for i in range(0, len(A_data)):
+        G[i*2,i*2] = -1*np.sin(aO[i])*np.cos(Aalpha)
+        G[i*2,(i*2)+1] = np.cos(aO[i])
+        G[(i*2)+1,i*2] = -1*np.sin(dO[(i)])*np.cos(Dalpha)
+        G[(i*2)+1,(i*2)+1] = np.cos(dO[(i)])
+X = np.linalg.pinv(G)@(v)
 
-#run the inversion row by row
-n=0
-for n in range(0,416100):
-     A = np.array([[o11[n,:], o12[n,:]], [o21[n,:], o22[n,:]]])
-     d = np.array([los_A[n,:], los_D[n,:]])
-     X=np.linalg.pinv(A).dot(d).T
-     with open('output.xyz', 'a') as outfile:
-          for slice_2d in X:
-               np.savetxt(outfile, slice_2d)
-     n = n+1
+E=np.zeros(int(len(X)/2))
+U=np.zeros(int(len(X)/2))
 
-     if n==416101:
-          break
+for i in range(0,len(E)):
+        E[i] = X[i*2]
+        U[i] = X[(i*2)+1]
+E[E==0]=np.nan
+U[U==0]=np.nan
+a = E.reshape(len(pos_A),1)
+b = U.reshape(len(pos_A),1)
+x = np.concatenate((pos_A, a), axis=1)
+y = np.concatenate((pos_A, b), axis=1)
+np.savetxt('outputs/output_east_'+name+'.xyz', x, fmt='%.10f', newline=os.linesep)
+np.savetxt('outputs/output_up_'+name+'.xyz', y, fmt='%.10f', newline=os.linesep)
+print(name)
 
-#Load in the output file 
-output = np.loadtxt("output.xyz")
-
-x = np.concatenate((pos_A, output[:,0:1]), axis=1)
-y = np.concatenate((pos_A, output[:,1:2]), axis=1)
-np.savetxt('output_east.xyz', x, fmt='%.7f')
-np.savetxt('output_up.xyz', y, fmt='%.7f')
-
-#This produces the min and max, which is useful for the scale bars in GMT script
-print('east')
-print('-T', np.amin(output[:,0:1]),"/",np.amax(output[:,0:1]))
-print('vert')
-print('-T', np.amin(output[:,1:2]),"/",np.amax(output[:,1:2]))
-
-#EndOfLine
+#EOL
