@@ -37,14 +37,17 @@ gmt xyz2grd incidence.lli -Rdem_snip.grd -INEW_x/NEW_Y -fg -Glook_up.grd
 #Use grdmath to calculate the incidence angles. arccos(look_up_radians)= incidence angle
 gmt grdmath look_up.grd ACOS = incidence_in_radians.grd
 
-#Repeat these steps for both LOS datasets
+#Repeat these steps; both LOS datasets need corresponding incidence angle information
 
 ########PART 3: import data into Python
 
 #find the azimuth with SAT_baseline. Use the median Azimuth produced by this command
 # put the azimuth directly into the python script; this is the same for every pixel
 
-#run los_decomp.py
+#run decomp_LOS.py
+#for larger datasets, use splitter.sh and process.sh to complete each decomposition in sections
+#This is necessary, as larger datasets will max out the python memory limit for the inversion.
+
 python los_decomp.px ascend.xyz incidence_ascend.xyz descend.xyz incidence_descend.xyz
 
 ########Part 4: finalize output
@@ -54,4 +57,4 @@ python los_decomp.px ascend.xyz incidence_ascend.xyz descend.xyz incidence_desce
 
 xyz2grd output.xyz -Rdem_AOI.grd -INEW_X/NEW_Y -Goutput.grd
 
-#EondOfLine
+#EOF
