@@ -1,7 +1,8 @@
 # InSAR_2D_decomposition_calculator
-#psuedo 2-dimensional surface motion will be calculated from one ascending and one descending InSAR velocity fields with opposing one-dimensional line of sight (LOS) view angles (Fuhrmann and Garthwaite, 2019). By taking two Interferometric Synthetic Aperature Radar Images (InSAR) from different satellite look directions (Ascending and Descending) decompose the LOS value from both velocity fields to create a vertical and east-west motion map with the N/S motions mapped into vertical and EW- we call this psuedo-Vertical and Psuedo-EW. 
+#psuedo 2-dimensional surface motion will be calculated from one ascending and one descending InSAR velocity fields with opposing one-dimensional line of sight (LOS) view angles (Fuhrmann and Garthwaite, 2019). By taking two Interferometric Synthetic Aperature Radar Images (InSAR) from different satellite look directions (Ascending and Descending),  decompose the LOS value from both velocity fields to create a vertical and east-west motion map with the N/S motions mapped into vertical and EW- we call this psuedo-Vertical and psuedo-EW. 
 
-#All of these calculations depend on .grd files of a similar size and resolution of an AOI (area of intrest) 
+#All of these calculations depend on .grd files of a similar size and resolution of an AOI (area of intrest)
+#any line without a hastag is an example of the command used for my project
 
 #Step 1: grdcut an AOI from the dem.grd used to create the InSAR images:
 grdcut topo/dem.grd -RW/E/S/N -Gdem_AOI.grd
